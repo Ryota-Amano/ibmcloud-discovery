@@ -1,0 +1,17 @@
+{
+  "name": "ibmcloud",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start":"tsc && node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^4.1.0",
+    "ibm-watson": "^5.7.1",
+    "typescript": "^4.0.2"
+  }
+}
