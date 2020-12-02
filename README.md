@@ -1,6 +1,6 @@
-# IBM Cloud discovery
+# IBM Cloud discovery便利ツール
 
-## collectionにある文書を全削除
+## 1. collectionにある文書を全削除
 仕様については下記リンクにあるQiitaの記事をご覧ください。
 
 またプログラムの使用については**自己責任**でお願いいたします。
