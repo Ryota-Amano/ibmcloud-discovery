@@ -1,98 +1,49 @@
-import Readline from 'readline'
-import { queryCollection, deleteDocuments } from './src/discovery'
-import { red, blue, green, yellow } from 'chalk'
 import fs from 'fs'
+import { blue, bold, red, yellow } from 'chalk'
+import { readUserInput } from './src/UserInput'
+import { getDocumentIDs } from './src/QueryCollection'
+import { deleteDocuments } from './src/DeleteDocuments'
 
-const readUserInput = (question: string): Promise<string> => {
-  const rl = Readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  })
-  return new Promise((resolve, reject) => {
-    rl.question(question, (answer) => {
-      resolve(answer)
-      rl.close()
-    })
-  })
-}
-const AllDeleteDocument = () => {
-
-}
-
+//IIFE 即時関数
 (async function main() {
-  //UserInput
-  console.log(yellow('IBM Discovery ---Delete AllDocument'))
-  console.log('Please enter the parameters...')
-  const url = await readUserInput('url? ');
-  const apikey = await readUserInput('apikey? ');
-  const environmentid = await readUserInput('environmentId? ');
-  const collectionid = await readUserInput('collectionId? ');
 
+  //Start message & UserInput
+  console.log(yellow('IBM Discovery ---Delete AllDocument'))
+  console.log('Please enter the Discovery parameters...')
+  const url: string = await readUserInput('url? ')
+  const apikey: string = await readUserInput('apikey? ')
+  const environmentid: string = await readUserInput('environmentId? ')
+  const collectionid: string = await readUserInput('collectionId? ')
   //UserInput Check
   if (!(url && apikey && environmentid && collectionid)) {
     console.log(red('Missing required parameters'))
     process.exit()
   }
+  //Confirmation of deletion.
+  console.log(yellow.bold('All documents in the collection will be deleted. Also, once deleted, it cannot be undone. Do you really want to delete this?'))
+  const confirm: string = await readUserInput(' y / n ? ')
 
-  //Discovery query
-  const resquery = await queryCollection(url, apikey, environmentid, collectionid)
-
-  //Discovery query error Check
-  if (resquery.status !== 200) {
-    //Error
-    console.log('Query a collection', red(`ERROR: ${resquery.status}: ${resquery.statusText}`))
-    console.log(`message: ${resquery.message}`)
-    process.exit()
-  }
-
-  console.log('Query a collection ', blue('OK'))
-  const matching_results = resquery.result.matching_results
-  //const count = matching_results / 10000 | 0 + (matching_results % 10000 === 0 ? 0 : 1)
-  //console.log('実行回数:', count)
-  console.log(`matching_results: ${matching_results}`)
-
-  //no document to delete
-  if (matching_results === 0) {
-    console.log(yellow('There is no document to delete.'))
-    process.exit()
-  }
-
-  const results = resquery.result.results
-  //Delete documents id
-  let deleteId = []
-  for (const key of results) {
-    deleteId.push(key.id)
-  }
-
-  //Delete documents
-  const resdelete = await deleteDocuments(url, apikey, environmentid, collectionid, deleteId)
-
-  let ok_count = 0
-  let errdocumentId: string[] = []
-  for (const key of resdelete) {
-    if (key.status === 200) {
-      ok_count++
-    } else {
-      errdocumentId.push(key.result.document_id)
+  //All Document Delete
+  if (confirm === 'y') {
+    let countFlag: boolean = true
+    let deletecount = 0
+    let alldocumentcount: number[] = []
+    while (countFlag) {
+      const { deleteIds, count, matching_results } = await getDocumentIDs(url, apikey, environmentid, collectionid)
+      alldocumentcount.push(matching_results)
+      deletecount += await deleteDocuments(url, apikey, environmentid, collectionid, deleteIds)
+      if (count <= 1) countFlag = false
     }
-  }
-  //Delete documents Error check
-  if (errdocumentId.length !== 0) {
-    //Error
-    fs.writeFileSync('./err.txt', 'Error documentIds\n')
-    errdocumentId.map(id => {
-      fs.appendFileSync('./err.txt', id)
-    })
-    console.log(red('Result: '), `delete: ${ok_count},`, yellow(`error: ${errdocumentId.length}`))
-  } else {
+
+    //End message
     if (fs.existsSync('./err.txt')) {
-      fs.unlinkSync('./err.txt')
+      console.log(yellow.bold('All Document Not Completed!!! Please check the error.txt'))
+      console.log(`deleted: ${deletecount} / ${Math.max.apply(null, alldocumentcount)}`)
+    } else {
+      console.log(blue.bold('All Document Completed.') + `    deleted: ${deletecount} / ` + bold(`${Math.max.apply(null, alldocumentcount)}`))
     }
-    console.log(green('Result: '), `delete: ${ok_count},`, `error: ${errdocumentId.length}`)
+  } else {
+    console.log('...Canceled')
   }
-})();
 
-
-
-
-
+})()
