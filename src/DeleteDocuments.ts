@@ -21,7 +21,7 @@ export const deleteDocuments = async (url: string, apikey: string, environmentid
     //Error
     fs.writeFileSync(errFilePath, 'Error documentIds\n')
     errdocumentId.map(id => {
-      fs.appendFileSync(errFilePath, id)
+      fs.appendFileSync(errFilePath + '\n', id)
     })
     console.log(red('Result: '), `delete: ${ok_count},`, yellow(`error: ${errdocumentId.length}`))
   } else {
